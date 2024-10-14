@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { groupCollapsed } from 'console';
 
 let imageSet = new Set<number>;
 let count = 0;
@@ -33,9 +32,9 @@ test.describe('Groups route is correct', async () => {
         }
     })
 
-    test('/groups/:groupId route is correct', async ({ page }) => {
+    test('/groups/:groupId route is properly set up', async ({ page }) => {
 
-        for (let i = 1; i <= count; i++) {
+        for (let i = 1; i < count; i++) {
             await page.goto(`http://localhost:8000/api/groups/${i}`);
             const group = await page.getByText('Group').innerText().then(res => JSON.parse(res))
             expect(group.GroupImages).toBeTruthy()
@@ -63,7 +62,7 @@ test.describe('Groups route is correct', async () => {
             expect(group.Organizer.hashedPassword).toBeFalsy()
             expect(group.Venues).toBeInstanceOf(Array)
             if (group.Venues.length) {
-                expect(group.Venues[1]).toBeInstanceOf(Object)
+                expect(group.Venues[0]).toBeInstanceOf(Object)
                 for (const venue of group.Venues) {
                     expect(venue.id).toBeTruthy()
                     expect(venue.id).toBeGreaterThan(0)
@@ -85,6 +84,8 @@ test.describe('Groups route is correct', async () => {
                 }
             }
         }
-
+        await page.goto(`http://localhost:8000/api/groups/${count + 1}`);
+        const invalidPage = await page.getByText('message').innerText().then(res => JSON.parse(Object(res)))
+        expect(invalidPage.message).toBe('Group Not Found')
     })
 })
