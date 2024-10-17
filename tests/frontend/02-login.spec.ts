@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { configDotenv } from 'dotenv';
-import { toUSVString } from 'util';
 configDotenv()
 
 test.describe("Feature: Log in", () => {
@@ -130,6 +129,7 @@ test.describe("Feature: Log in", () => {
 
         cookies = await context.cookies();
         sessionCookie = cookies.find((cookie) => cookie.name === "XSRF-TOKEN");
+
         await expect(sessionCookie).toBeTruthy();
 
         await expect(page.getByTestId("user-menu-button")).toBeVisible();
