@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { configDotenv } from 'dotenv';
+import { toUSVString } from 'util';
 configDotenv()
 
 test.describe("Feature: Log in", () => {
@@ -82,7 +83,7 @@ test.describe("Feature: Log in", () => {
         await page.getByTestId("user-menu-button").click();
         await page.getByTestId("login-menu-button").click();
 
-        await page.getByTestId("credential-input").last().fill("Demo-lition");
+        await page.getByTestId("credential-input").last().fill("demouser@example.com");
         await page.getByTestId("password-input").last().fill("password");
         await page.getByTestId("login-button").last().click();
 
@@ -95,83 +96,78 @@ test.describe("Feature: Log in", () => {
         await page.getByTestId("user-menu-button").click();
         await page.getByTestId("login-menu-button").click();
 
-        await page.getByTestId("credential-input").last().fill("demouser@example.com");
+        await page.getByTestId("credential-input").last().fill("Demo-lition");
         await page.getByTestId("password-input").last().fill("password");
         await page.getByTestId("login-button").last().click();
 
         await page.getByTestId("user-menu-button").click();
-        await expect(page.getByText("Log in")).toBeAttached({ attached: false });
-        await expect(page.getByText("Sign up")).toBeAttached({ attached: false });
+        await expect(page.getByTestId("login-menu-button")).toBeAttached({ attached: false });
+        await expect(page.getByTestId("signup-menu-button")).toBeAttached({ attached: false });
     });
 
     test("Upon logging in with a valid username and password, it shows the User Menu Button.", async ({ page }) => {
         await page.getByTestId("user-menu-button").click();
-        await page.getByText("Log in").click();
+        await page.getByTestId("login-menu-button").click();
 
-        await page.getByTestId("credential-input").fill("demo@user.io");
-        await page.getByTestId("password-input").fill("password");
-        await page.getByTestId("login-button").click();
-
-        await expect(page.getByTestId("user-menu-button")).toBeVisible();
-    });
-
-    test('In the log-in modal, an extra link or button is available with the label "Log in as Demo User". Upon clicking this "Log in as Demo User" button, it will log the user into the "demo" account.', async ({
-        page,
-        context,
-    }) => {
-        await page.getByTestId("user-menu-button").click();
-        await page.getByText("Log in").click();
-
-        await expect(page.getByText(/demo user/i)).toBeVisible();
-        await page.getByText(/demo user/i).click();
-
-        const cookies = await context.cookies();
-        const sessionCookie = cookies.find(
-            (cookie) => cookie.name === "XSRF-TOKEN"
-        );
-        expect(sessionCookie).toBeTruthy();
+        await page.getByTestId("credential-input").last().fill("demouser@example.com");
+        await page.getByTestId("password-input").last().fill("password");
+        await page.getByTestId("login-button").last().click();
 
         await expect(page.getByTestId("user-menu-button")).toBeVisible();
     });
 
-    test("Upon closing the log-in modal, it resets errors and clears all data entered. When it reopens it will be in the default state (empty inputs and disabled button).", async ({
-        page,
-    }) => {
+    test('In the log-in modal, an extra link or button is available with the label "Log in as Demo User". Upon clicking this "Log in as Demo User" button, it will log the user into the "demo" account.', async ({ page, context }) => {
+        let cookies = await context.cookies();
+        let sessionCookie = cookies.find((cookie) => cookie.name === "XSRF-TOKEN");
+        await expect(sessionCookie).toBeUndefined()
+
         await page.getByTestId("user-menu-button").click();
-        await page.getByText("Log in").click();
+        await page.getByTestId("login-menu-button").click();
 
-        await page.getByTestId("credential-input").fill("invaliduser");
-        await page.getByTestId("password-input").fill("invalidpass");
-        await page.getByTestId("login-button").click();
+        await expect(page.getByTestId('demo-login-button').last()).toBeVisible();
+        await expect(page.getByTestId('demo-login-button').last()).toHaveText('Demo User', { ignoreCase: true });
+        await page.getByTestId('demo-login-button').last().click();
 
-        await expect(
-            page.getByText("The provided credentials were invalid")
-        ).toBeVisible();
+        cookies = await context.cookies();
+        sessionCookie = cookies.find((cookie) => cookie.name === "XSRF-TOKEN");
+        await expect(sessionCookie).toBeTruthy();
+
+        await expect(page.getByTestId("user-menu-button")).toBeVisible();
+    });
+
+    test("Upon closing the log-in modal, it resets errors and clears all data entered. When it reopens it will be in the default state (empty inputs and disabled button).", async ({ page }) => {
+        await page.getByTestId("user-menu-button").click();
+        await page.getByTestId("login-menu-button").click();
+        await expect(page.getByText("The provided credentials were invalid")).toBeHidden();
+
+        await page.getByTestId("credential-input").last().fill("invaliduser");
+        await page.getByTestId("password-input").last().fill("invalidpass");
+        await page.getByTestId("login-button").last().click();
+
+        await expect(page.getByText("The provided credentials were invalid")).toBeVisible();
 
         await page.mouse.click(0, 0);
-        await expect(page.getByTestId("login-modal")).not.toBeVisible();
+        await expect(page.getByTestId("login-modal")).toBeAttached({ attached: false });
 
         await page.getByTestId("user-menu-button").click();
-        await page.getByText("Log in").click();
+        await page.getByTestId("login-menu-button").click();
 
-        await expect(page.getByTestId("credential-input")).toHaveValue("");
-        await expect(page.getByTestId("password-input")).toHaveValue("");
-        await expect(page.getByTestId("login-button")).toBeDisabled();
-        await expect(
-            page.getByText("The provided credentials were invalid")
-        ).not.toBeVisible();
+        await expect(page.getByTestId("credential-input").last()).toHaveValue("");
+        await expect(page.getByTestId("password-input").last()).toHaveValue("");
+        await expect(page.getByTestId("login-button").last()).toBeDisabled();
+        await expect(page.getByText("The provided credentials were invalid")).toBeHidden();
     });
 
-    test("The layout and element positioning is equivalent to the wireframes.", async ({
-        page,
-    }) => {
+    test("The layout and element positioning is equivalent to the wireframes.", async ({ page }) => {
         await page.getByTestId("user-menu-button").click();
-        await page.getByText("Log in").click();
+        await page.getByTestId("login-menu-button").click();
 
-        const loginModal = await page.getByTestId("login-modal");
-        const usernameInput = await page.getByTestId("credential-input");
-        const passwordInput = await page.getByTestId("password-input");
-        const loginButton = await page.getByTestId("login-button");
+        const loginModal = await page.getByTestId("login-modal").last();
+        const usernameInput = await page.getByTestId("credential-input").last();
+        const passwordInput = await page.getByTestId("password-input").last();
+        const loginButton = await page.getByTestId("login-button").last();
+        const errorMessage = await page.getByText("The provided credentials were invalid")
+        const demoButton = await page.getByTestId('demo-login-button').last()
 
         await expect(loginModal).toBeVisible();
 
@@ -179,13 +175,26 @@ test.describe("Feature: Log in", () => {
         const usernameBoundingBox = await usernameInput.boundingBox();
         const passwordBoundingBox = await passwordInput.boundingBox();
         const loginButtonBoundingBox = await loginButton.boundingBox();
+        const demoButtonBoundingBox = await demoButton.boundingBox()
 
-        expect(usernameBoundingBox?.y).toBeLessThan(passwordBoundingBox?.y!);
+        await expect(usernameBoundingBox?.y).toBeLessThan(passwordBoundingBox?.y!);
+        await expect(loginButtonBoundingBox?.y).toBeGreaterThan(passwordBoundingBox?.y!);
+        await expect(demoButtonBoundingBox?.y).toBeGreaterThan(passwordBoundingBox?.y!);
+        await expect(usernameBoundingBox?.x).toBeGreaterThan(modalBoundingBox?.x!);
+        await expect(passwordBoundingBox?.x).toBeGreaterThan(modalBoundingBox?.x!);
+        await expect(loginButtonBoundingBox?.x).toBeGreaterThan(modalBoundingBox?.x!);
+        await expect(demoButtonBoundingBox?.x).toBeGreaterThan(modalBoundingBox?.x!);
 
-        expect(loginButtonBoundingBox?.y).toBeGreaterThan(passwordBoundingBox?.y!);
+        await page.getByTestId("credential-input").last().fill("invaliduser");
+        await page.getByTestId("password-input").last().fill("invalidpass");
+        await page.getByTestId("login-button").last().click();
+        await expect(errorMessage).toBeVisible()
 
-        expect(usernameBoundingBox?.x).toBeGreaterThan(modalBoundingBox?.x!);
-        expect(passwordBoundingBox?.x).toBeGreaterThan(modalBoundingBox?.x!);
-        expect(loginButtonBoundingBox?.x).toBeGreaterThan(modalBoundingBox?.x!);
+        await expect(usernameBoundingBox?.y).toBeLessThan(passwordBoundingBox?.y!);
+        await expect(loginButtonBoundingBox?.y).toBeGreaterThan(passwordBoundingBox?.y!);
+        await expect(usernameBoundingBox?.x).toBeGreaterThan(modalBoundingBox?.x!);
+        await expect(passwordBoundingBox?.x).toBeGreaterThan(modalBoundingBox?.x!);
+        await expect(loginButtonBoundingBox?.x).toBeGreaterThan(modalBoundingBox?.x!);
+        await expect(demoButtonBoundingBox?.x).toBeGreaterThan(modalBoundingBox?.x!);
     });
 });
