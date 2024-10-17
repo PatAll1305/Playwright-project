@@ -36,7 +36,7 @@ Playwright allows you to run tests in different browsers like Chromium, Firefox,
 project-root/
 │
 ├── tests/                # All test scripts
-│   ├── backend/    # Example test file
+│   ├── backend/    
 │   │       ├──testName.spec.ts
 │   └── frontend/
 │           ├──testName.spec.ts
